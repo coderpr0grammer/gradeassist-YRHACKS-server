@@ -20,3 +20,51 @@ const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
+
+async function request(req) {
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: req,
+        max_tokens: 150,
+        temperature: 0.5,
+      }),
+    });
+    const data = await response.json();
+    const chatResponse = data.choices[0].message;
+    console.log("chatresponse", chatResponse);
+    return chatResponse;
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+}
+
+app.get("/api", (req, res) => {
+  console.log("req", req.query);
+  async function getReply() {
+    const response = await request([{ role: "user", content: req.query.prompt }]);
+    console.log(response);
+    res.json(response);
+  }
+  getReply();
+});
+
+app.post("/api", (req, res) => {
+  async function getReply() {
+	const response = await request(req.body.prompt);
+    console.log(response);
+    res.json(response);
+  }
+  getReply();
+});
+
+app.listen(port, () => {
+  console.log(`Example app listening at http://localhost:${port}`);
+});
